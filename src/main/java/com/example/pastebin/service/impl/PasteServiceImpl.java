@@ -34,75 +34,81 @@ public class PasteServiceImpl implements PasteService {
     public ResponseEntity<?> createPaste(PasteRequest req, HttpServletRequest http) {
 
         if (req.getContent() == null || req.getContent().trim().isEmpty())
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid content"));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Invalid content"));
 
         if (req.getTtl_seconds() != null && req.getTtl_seconds() < 1)
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid ttl"));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Invalid ttl_seconds"));
 
         if (req.getMax_views() != null && req.getMax_views() < 1)
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid max_views"));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Invalid max_views"));
 
         long now = now(http);
 
-        Paste paste = new Paste();
-        paste.setId(UUID.randomUUID().toString());
-        paste.setContent(req.getContent());
-        paste.setMaxViews(req.getMax_views());
-        paste.setCurrentViews(0);
-        paste.setCreatedAt(now);
+        Paste p = new Paste();
+        p.setId(UUID.randomUUID().toString());
+        p.setContent(req.getContent());
+        p.setMaxViews(req.getMax_views());
+        p.setCurrentViews(0);
+        p.setCreatedAt(now);
 
         if (req.getTtl_seconds() != null) {
-            paste.setExpiresAt(now + req.getTtl_seconds() * 1000);
+            p.setExpiresAt(now + req.getTtl_seconds() * 1000);
         }
+        System.out.println("p = " + p);
 
-        repo.save(paste);
+        repo.save(p);
 
         return ResponseEntity.ok(Map.of(
-                "id", paste.getId(),
-                "url", req.getFrontendUrl() + "/" + paste.getId()
+                "id", p.getId(),
+                "url", "/p/" + p.getId()
         ));
     }
 
     @Override
     public ResponseEntity<?> fetchPaste(String id, HttpServletRequest req) {
 
-        Paste paste = repo.findById(id).orElse(null);
-        if (paste == null) return notFound();
+        Paste p = repo.findById(id).orElse(null);
+        System.out.println("p = " + p);
+        if (p == null) return notFound();
 
         long now = now(req);
 
-        if (paste.getExpiresAt() != null && now >= paste.getExpiresAt())
+        if (p.getExpiresAt() != null && now >= p.getExpiresAt())
             return notFound();
 
-        if (paste.getMaxViews() != null && paste.getCurrentViews() >= paste.getMaxViews())
+        if (p.getMaxViews() != null &&
+                p.getCurrentViews() >= p.getMaxViews())
             return notFound();
 
-        paste.setCurrentViews(paste.getCurrentViews() + 1);
-        repo.save(paste);
+        System.out.println("p.getCurrentViews() 1 = " + p.getCurrentViews());
+        p.setCurrentViews(p.getCurrentViews() + 1);
+        repo.save(p);
 
-        Integer remaining = paste.getMaxViews() == null
+        Integer remaining = p.getMaxViews() == null
                 ? null
-                : paste.getMaxViews() - paste.getCurrentViews();
+                : p.getMaxViews() - p.getCurrentViews();
 
         return ResponseEntity.ok(Map.of(
-                "content", paste.getContent(),
+                "content", p.getContent(),
                 "remaining_views", remaining,
-                "expires_at", paste.getExpiresAt() == null
+                "expires_at", p.getExpiresAt() == null
                         ? null
-                        : Instant.ofEpochMilli(paste.getExpiresAt()).toString()
+                        : Instant.ofEpochMilli(p.getExpiresAt()).toString()
         ));
     }
 
     @Override
     public ResponseEntity<String> viewPaste(String id, HttpServletRequest req) {
 
-        ResponseEntity<?> apiResponse = fetchPaste(id, req);
-        if (!apiResponse.getStatusCode().is2xxSuccessful()) {
+        ResponseEntity<?> api = fetchPaste(id, req);
+        if (!api.getStatusCode().is2xxSuccessful())
             return ResponseEntity.status(404).body("Not Found");
-        }
 
-        Map<?, ?> body = (Map<?, ?>) apiResponse.getBody();
-        String safeContent = HtmlUtils.htmlEscape(body.get("content").toString());
+        Map<?, ?> body = (Map<?, ?>) api.getBody();
+        String safe = HtmlUtils.htmlEscape(body.get("content").toString());
 
         return ResponseEntity.ok("""
             <html>
@@ -110,7 +116,7 @@ public class PasteServiceImpl implements PasteService {
                 <pre>%s</pre>
               </body>
             </html>
-        """.formatted(safeContent));
+        """.formatted(safe));
     }
 
     private ResponseEntity<Map<String, String>> notFound() {
