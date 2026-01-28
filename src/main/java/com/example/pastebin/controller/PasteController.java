@@ -1,11 +1,20 @@
 package com.example.pastebin.controller;
 
 import com.example.pastebin.dto.PasteRequest;
+import com.example.pastebin.entity.Paste;
 import com.example.pastebin.repo.PasteRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.HtmlUtils;
 
+import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
+@RequestMapping("/paste")
+@CrossOrigin("http://localhost:5173")
 public class PasteController {
 
     private final PasteRepository repo;
@@ -22,12 +31,12 @@ public class PasteController {
         return System.currentTimeMillis();
     }
 
-    @GetMapping("/api/healthz")
+    @GetMapping("/healthz")
     public Map<String, Boolean> health() {
         return Map.of("ok", true);
     }
 
-    @PostMapping("/api/pastes")
+    @PostMapping("/create")
     public ResponseEntity<?> create(
             @RequestBody PasteRequest req,
             HttpServletRequest http) {
@@ -57,11 +66,11 @@ public class PasteController {
 
         return ResponseEntity.ok(Map.of(
                 "id", p.getId(),
-                "url", "https://your-domain/p/" + p.getId()
+                "url", req.getFrontendUrl()+"/"+ p.getId()
         ));
     }
 
-    @GetMapping("/api/pastes/{id}")
+    @GetMapping("/get-by-id/{id}")
     public ResponseEntity<?> fetch(
             @PathVariable String id,
             HttpServletRequest req) {
@@ -93,7 +102,7 @@ public class PasteController {
         ));
     }
 
-    @GetMapping("/p/{id}")
+    @GetMapping("/view/{id}")
     public ResponseEntity<String> view(
             @PathVariable String id,
             HttpServletRequest req) {
