@@ -3,15 +3,20 @@
 Spring Boot backend for Pastebin.
 
 ## Tech Stack
-- Java 17
-- Spring Boot
-- Spring Data JPA
+- Java 21 (LTS)
+- Spring Boot 3.x
+- Spring Data JPA (Hibernate)
 - PostgreSQL (Neon DB)
+- Maven (Maven Wrapper)
 
 ## Run Locally
 
 ### Requirements
-- Java 17+
+- Java 21 (LTS)
+
+Check Java version:
+```bash
+java -version
 
 ### Steps
 ```bash
