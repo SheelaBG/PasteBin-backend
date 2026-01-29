@@ -19,8 +19,12 @@ public class PasteController {
     }
 
     @GetMapping("/api/healthz")
-    public Map<String, Boolean> health() {
-        return Map.of("ok", true);
+    public ResponseEntity<?> health() {
+        if (pasteService.isHealthy()) {
+            return ResponseEntity.ok(Map.of("ok", true));
+        }
+        return ResponseEntity.status(500)
+                .body(Map.of("ok", false));
     }
 
     @PostMapping("/api/pastes")

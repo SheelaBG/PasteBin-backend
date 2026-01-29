@@ -11,4 +11,6 @@ public interface PasteService {
     ResponseEntity<?> fetchPaste(String id, HttpServletRequest request);
 
     ResponseEntity<String> viewPaste(String id, HttpServletRequest request);
+
+    boolean isHealthy();
 }
